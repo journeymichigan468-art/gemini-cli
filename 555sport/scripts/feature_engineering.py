@@ -43,8 +43,11 @@ def validate_columns(df: pd.DataFrame) -> None:
 
 def coerce_numeric(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     """Coerce expected numeric columns while preserving NaN for invalid values."""
+    before_nulls = df[columns].isna().sum()
     for col in columns:
         df[col] = pd.to_numeric(df[col], errors="coerce")
+    after_nulls = df[columns].isna().sum()
+    df.attrs["coerced_nulls"] = (after_nulls - before_nulls).clip(lower=0).to_dict()
     return df
 
 
@@ -124,6 +127,13 @@ def main() -> None:
     print("✅ Feature Engineering Completed")
     print(f"Rows processed: {len(data):,}")
     print(f"Saved to: {output_path}")
+    coerced_nulls = data.attrs.get("coerced_nulls", {})
+    newly_null_columns = {k: v for k, v in coerced_nulls.items() if v > 0}
+    if newly_null_columns:
+        formatted = ", ".join(
+            f"{column}={count}" for column, count in sorted(newly_null_columns.items())
+        )
+        print(f"New NaN values from numeric coercion: {formatted}")
 
 
 if __name__ == "__main__":
