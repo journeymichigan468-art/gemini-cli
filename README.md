@@ -391,3 +391,18 @@ See the [Uninstall Guide](docs/cli/uninstall.md) for removal instructions.
 <p align="center">
   Built with ❤️ by Google and the open source community
 </p>
+
+## 📊 Data Feature Engineering (Python)
+
+If you have historical match data, you can generate engineered features with:
+
+```bash
+python3 555sport/scripts/feature_engineering.py \
+  --input 555sport/data/historical_master.csv \
+  --output 555sport/data/historical_engineered.csv
+```
+
+The script validates required columns and creates:
+
+- `goal_diff`, `xg_diff`, `line_delta`, `odds_drift_home`, `form_diff`
+- `home_cover_result`, `total_goals`, `over25_result`, `trap_signal`
