@@ -168,6 +168,49 @@ describe('clipboardUtils', () => {
 
       expect(result).toBe(false);
     });
+
+    it('should use xclip when DISPLAY is set but XDG_SESSION_TYPE is unavailable', async () => {
+      setPlatform('linux');
+      delete process.env['XDG_SESSION_TYPE'];
+      process.env['DISPLAY'] = ':0';
+      (execSync as Mock).mockReturnValue(Buffer.from(''));
+      (spawnAsync as Mock).mockResolvedValueOnce({
+        stdout: 'image/png\nTARGETS',
+      });
+
+      const result = await clipboardUtils.clipboardHasImage();
+
+      expect(result).toBe(true);
+      expect(execSync).toHaveBeenCalledWith(
+        expect.stringContaining('xclip'),
+        expect.anything(),
+      );
+      expect(spawnAsync).toHaveBeenCalledWith('xclip', [
+        '-selection',
+        'clipboard',
+        '-t',
+        'TARGETS',
+        '-o',
+      ]);
+    });
+
+    it('should use xclip when DISPLAY is set and XDG_SESSION_TYPE is not a GUI session', async () => {
+      setPlatform('linux');
+      process.env['XDG_SESSION_TYPE'] = 'tty';
+      process.env['DISPLAY'] = ':0';
+      (execSync as Mock).mockReturnValue(Buffer.from(''));
+      (spawnAsync as Mock).mockResolvedValueOnce({
+        stdout: 'image/png\nTARGETS',
+      });
+
+      const result = await clipboardUtils.clipboardHasImage();
+
+      expect(result).toBe(true);
+      expect(execSync).toHaveBeenCalledWith(
+        expect.stringContaining('xclip'),
+        expect.anything(),
+      );
+    });
   });
 
   describe('saveClipboardImage (Linux)', () => {
