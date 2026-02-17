@@ -35,6 +35,24 @@ const PATH_PREFIX_PATTERN = /^([/~.]|[a-zA-Z]:|\\\\)/;
 // Track which tool works on Linux to avoid redundant checks/failures
 let linuxClipboardTool: 'wl-paste' | 'xclip' | null = null;
 
+function detectLinuxDisplayServer(): 'wayland' | 'x11' | null {
+  const sessionType = process.env['XDG_SESSION_TYPE']?.toLowerCase();
+  if (sessionType === 'wayland' || sessionType === 'x11') {
+    return sessionType;
+  }
+
+  // Fallbacks for environments where XDG_SESSION_TYPE is unset/incorrect
+  // (e.g. Termux X11, remote/embedded sessions).
+  if (process.env['WAYLAND_DISPLAY']) {
+    return 'wayland';
+  }
+  if (process.env['DISPLAY']) {
+    return 'x11';
+  }
+
+  return null;
+}
+
 // Helper to check the user's display server and whether they have a compatible clipboard tool installed
 function getUserLinuxClipboardTool(): typeof linuxClipboardTool {
   if (linuxClipboardTool !== null) {
@@ -42,7 +60,7 @@ function getUserLinuxClipboardTool(): typeof linuxClipboardTool {
   }
 
   let toolName: 'wl-paste' | 'xclip' | null = null;
-  const displayServer = process.env['XDG_SESSION_TYPE'];
+  const displayServer = detectLinuxDisplayServer();
 
   if (displayServer === 'wayland') toolName = 'wl-paste';
   else if (displayServer === 'x11') toolName = 'xclip';
